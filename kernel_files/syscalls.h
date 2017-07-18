@@ -57,6 +57,7 @@ struct compat_timeval;
 struct robust_list_head;
 struct getcpu_cache;
 struct pinfo;
+struct memstats;
 
 #include <linux/types.h>
 #include <linux/aio_abi.h>
@@ -69,6 +70,7 @@ struct pinfo;
 #include <linux/quota.h>
 #include <linux/key.h>
 #include <linux/pinfo.h>
+#include <linux/memstats.h>
 
 asmlinkage long sys_time(time_t __user *tloc);
 asmlinkage long sys_stime(time_t __user *tptr);
@@ -616,5 +618,5 @@ asmlinkage long sys_mmap_pgoff(unsigned long addr, unsigned long len,
 			unsigned long prot, unsigned long flags,
 			unsigned long fd, unsigned long pgoff);
 asmlinkage long sys_pinfo(struct pinfo *info);
-asmlinkage long sys_memstats(void);
+asmlinkage long sys_memstats(struct memstats *stats);
 #endif
