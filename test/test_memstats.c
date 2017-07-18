@@ -14,11 +14,29 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <memstats.h>
 
 int main() {
+  struct memstats *mem_stats;
   int status;
 
-  status = syscall(302);
+  /* Call new system call */
+  mem_stats = malloc(sizeof(*mem_stats));
+  status = syscall(302, mem_stats);
 
-  printf("Status: %d\n", status);
+  printf("Current number of free pages: %d\n", mem_stats->free_pages);
+  printf("Current number of pages used by slab allocator: %d\n", mem_stats->slab_pages);
+  printf("Current number of pages in the active list: %d\n", mem_stats->active_list_pages);
+  printf("Current number of pages in the inactive list: %d\n", mem_stats->inactive_list_pages);
+  printf("Current number of pages in the active list whose reference bits are set: %d\n", mem_stats->active_list_ref_pages);
+  printf("Current number of pages in the inactive list whose reference bits are set: %d\n", mem_stats->inactive_list_ref_pages);
+  printf("Cumulative number of pages moved from the active list to the inactive list: %d\n", mem_stats->total_active_to_inactive_pages);
+  printf("Cumulative number of pages evicted from the inactive list: %d\n", mem_stats->total_from_inactive_pages);
+
+  if (status < 0) {
+    printf("Something went wrong. Status: %d\n", status);
+    return 0;
+  }
+
+  return 0;
 }
