@@ -2,8 +2,8 @@
 #define MEMSTATS_H
 
 struct memstats {
-  unsigned long free_pages;                    /* current number of free pages */
-  unsigned long slab_pages;                     /* current number of pages used by slab allocator */
+  unsigned long free_pages;           /* current number of free pages */
+  unsigned long slab_pages;           /* current number of pages used by slab allocator */
   int active_list_pages;              /* current number of pages in the active list */
   int inactive_list_pages;            /* current number of pages in the inactive list */
   int active_list_ref_pages;          /* current number of pages in the active list whose reference bits are set */
