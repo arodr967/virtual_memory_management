@@ -10,6 +10,8 @@ struct memstats {
   int inactive_list_ref_pages;        /* current number of pages in the inactive list whose reference bits are set */
   int total_active_to_inactive_pages; /* cumulative number of pages moved from the active list to the inactive list */
   int total_from_inactive_pages;      /* cumulative number of pages evicted from the inactive list */
+
+  int is_counter_based_clock;         /* trigger on and off the counter based clock algorithm */
 };
 
 #endif

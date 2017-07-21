@@ -18,7 +18,10 @@
 #include <linux/uaccess.h>
 #include <linux/kernel.h>
 
+extern int IS_COUNTER_BASED_CLOCK;
+
 void init_kernel_stats(struct memstats *kernel_stats);
+void set_counter_based_clock(struct memstats *kernel_stats);
 
 asmlinkage long sys_memstats(struct memstats *stats) {
 
@@ -50,9 +53,8 @@ asmlinkage long sys_memstats(struct memstats *stats) {
 
   printk(KERN_INFO "sys_memstats: Starting memstats system call...\n");
 
+  set_counter_based_clock(stats);
   init_kernel_stats(kernel_stats);
-
-  printk(KERN_INFO "sys_memstats: Initialized memstats values to 0\n");
 
   for_each_online_pgdat(data_ptr) {
     // Initialize zones
@@ -70,6 +72,8 @@ asmlinkage long sys_memstats(struct memstats *stats) {
       // Get each active page
       list_for_each(active_page, &(zones->active_list)) {
         active_list_pages++;
+
+        // Test for the active list referenced pages
         page_ptr = list_entry(active_page, struct page, lru);
         active_list_ref_pages += test_bit(PG_referenced, &page_ptr->flags);
       }
@@ -77,6 +81,8 @@ asmlinkage long sys_memstats(struct memstats *stats) {
       // Get each inactive page
       list_for_each(inactive_page, &(zones->inactive_list)) {
         inactive_list_pages++;
+
+        // Test for the inactive list referenced pages
         page_ptr = list_entry(inactive_page, struct page, lru);
         inactive_list_ref_pages += test_bit(PG_referenced, &page_ptr->flags);
       }
@@ -111,6 +117,16 @@ void init_kernel_stats(struct memstats *kernel_stats) {
   kernel_stats->inactive_list_ref_pages = 0;
   kernel_stats->total_active_to_inactive_pages = 0;
   kernel_stats->total_from_inactive_pages = 0;
+
+  printk(KERN_INFO "sys_memstats: Initialized memstats values to 0\n");
 }
 
-
+void set_counter_based_clock(struct memstats *stats) {
+  if (stats->is_counter_based_clock == 1) {
+    IS_COUNTER_BASED_CLOCK = 1;
+    printk(KERN_INFO "sys_memstats: Using counter-based clock algorithm...\n");
+  } else {
+    IS_COUNTER_BASED_CLOCK = 0;
+    printk(KERN_INFO "sys_memstats: Using second-chance LRU approximation algorithm...\n");
+  }
+}
