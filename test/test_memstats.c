@@ -16,12 +16,25 @@
 #include <stdlib.h>
 #include <memstats.h>
 
-int main() {
+// Function declarations
+void validate_arguments(int argc, char *argv[]);
+void check_algorithms(int is_counter_based_clock);
+
+int main(int argc, char *argv[]) {
   struct memstats *mem_stats;
-  int status;
+  int status, is_counter_based_clock;
+
+  validate_arguments(argc, argv);
+  
+  is_counter_based_clock = atoi(argv[1]);
+
+  mem_stats = malloc(sizeof(*mem_stats));
+
+  /* Set counter-based clock algorithm */
+  mem_stats->is_counter_based_clock = is_counter_based_clock;
+  check_algorithms(is_counter_based_clock);
 
   /* Call new system call */
-  mem_stats = malloc(sizeof(*mem_stats));
   status = syscall(302, mem_stats);
 
   printf("Current number of free pages: %d\n", mem_stats->free_pages);
@@ -39,4 +52,19 @@ int main() {
   }
 
   return 0;
+}
+
+void validate_arguments(int argc, char *argv[]) {
+  if (argc != 2) {
+    printf("usage: %s <is_counter_based_clock>\n", argv[0]);
+    exit(-1);
+  }
+}
+
+void check_algorithms(int is_counter_based_clock) {
+  if (is_counter_based_clock) {
+    printf("Counter-clock based algorithm...\n");
+  } else {
+    printf("Second-chance LRU approximation algorithm...\n");
+  }
 }
