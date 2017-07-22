@@ -752,7 +752,7 @@ static inline int zone_is_near_oom(struct zone *zone)
 static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
 				struct scan_control *sc, int priority)
 {
-	int IS_COUNTER_BASED_CLOCK = 1; /* Trigger counter-based clock algorithm */
+	int IS_COUNTER_BASED_CLOCK = 0; /* Trigger counter-based clock algorithm */
 	printk(KERN_INFO "Counter-based clock algorithm has been set? %d\n", IS_COUNTER_BASED_CLOCK);
 	
 	unsigned long pgmoved;
@@ -827,9 +827,9 @@ force_reclaim_mapped:
 
 		if (IS_COUNTER_BASED_CLOCK) {
 			// If reference_counter does not reach maximum value
-			if (page->reference_counter + 1 > page->reference_counter) {
+			if ((page->reference_counter + TestClearPageReferenced(page)) > 0) {
 				// Add reference bit value to reference_counter
-				page->reference_counter += page_referenced(page, 0);
+				page->reference_counter += TestClearPageReferenced(page);
 			} else {
 				// Clear the reference bit
 				page_referenced(page, 0);
@@ -851,10 +851,10 @@ force_reclaim_mapped:
 				continue;
 			}
 		}
+
 		if (IS_COUNTER_BASED_CLOCK) {
 			if (page->reference_counter == 0) {
-				// Evict the page only if the counter is set to 0
-				list_add(&page->lru, &l_inactive);
+				list_add(&page->lru, &l_inactive);		
 			}
 		} else {
 			list_add(&page->lru, &l_inactive);
