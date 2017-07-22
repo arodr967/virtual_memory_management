@@ -1797,6 +1797,7 @@ void __meminit memmap_init_zone(unsigned long size, int nid, unsigned long zone,
 		page = pfn_to_page(pfn);
 		set_page_links(page, zone, nid, pfn);
 		init_page_count(page);
+		page->reference_counter = 0; /* Initializing reference_counter to 0 */
 		reset_page_mapcount(page);
 		SetPageReserved(page);
 		INIT_LIST_HEAD(&page->lru);
@@ -2153,6 +2154,9 @@ static void __meminit free_area_init_core(struct pglist_data *pgdat,
 		zone->nr_scan_inactive = 0;
 		zone->nr_active = 0;
 		zone->nr_inactive = 0;
+		// Initialize custom zone fields
+		zone->total_active_to_inactive_pages = 0;
+		zone->total_taken_from_inactive_pages = 0;
 		zap_zone_vm_stats(zone);
 		atomic_set(&zone->reclaim_in_progress, 0);
 		if (!size)

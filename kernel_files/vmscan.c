@@ -44,10 +44,6 @@
 
 #include "internal.h"
 
-extern int IS_COUNTER_BASED_CLOCK;
-int IS_COUNTER_BASED_CLOCK = 0; /* Initializing counter-based clock algorithm to 0 */
-EXPORT_SYMBOL(IS_COUNTER_BASED_CLOCK); /* Making the global variable available to other modules */
-
 struct scan_control {
 	/* Incremented by the number of inactive pages that were scanned */
 	unsigned long nr_scanned;
@@ -709,6 +705,11 @@ done:
 	local_irq_enable();
 	pagevec_release(&pvec);
 	trace_mm_pagereclaim_shrinkinactive(nr_reclaimed);
+
+	spin_lock_irq(&zone->lru_lock);
+	zone->total_taken_from_inactive_pages += nr_reclaimed; /* Get pages evicted from inactive list */
+	spin_unlock_irq(&zone->lru_lock);
+
 	return nr_reclaimed;
 }
 
@@ -751,6 +752,9 @@ static inline int zone_is_near_oom(struct zone *zone)
 static void shrink_active_list(unsigned long nr_pages, struct zone *zone,
 				struct scan_control *sc, int priority)
 {
+	int IS_COUNTER_BASED_CLOCK = 1; /* Trigger counter-based clock algorithm */
+	printk(KERN_INFO "Counter-based clock algorithm has been set? %d\n", IS_COUNTER_BASED_CLOCK);
+	
 	unsigned long pgmoved;
 	int pgdeactivate = 0;
 	unsigned long pgscanned;
@@ -821,16 +825,40 @@ force_reclaim_mapped:
 		page = lru_to_page(&l_hold);
 		list_del(&page->lru);
 
+		if (IS_COUNTER_BASED_CLOCK) {
+			// If reference_counter does not reach maximum value
+			if (page->reference_counter + 1 > page->reference_counter) {
+				// Add reference bit value to reference_counter
+				page->reference_counter += page_referenced(page, 0);
+			} else {
+				// Clear the reference bit
+				page_referenced(page, 0);
+			}
+		}
+
 		if (page_mapped(page)) {
 			if (!reclaim_mapped ||
 			    (total_swap_pages == 0 && PageAnon(page)) ||
-			    page_referenced(page, 0)) {
+			    IS_COUNTER_BASED_CLOCK ? (page->reference_counter > 0) : page_referenced(page, 0)) {
+
+				if (IS_COUNTER_BASED_CLOCK) {
+					// Decrement reference_counter by 1
+					page->reference_counter--;
+				}
+				// Move the frame back to the list
 				list_add(&page->lru, &l_active);
 				trace_mm_pagereclaim_shrinkactive_a2a(page);
 				continue;
 			}
 		}
-		list_add(&page->lru, &l_inactive);
+		if (IS_COUNTER_BASED_CLOCK) {
+			if (page->reference_counter == 0) {
+				// Evict the page only if the counter is set to 0
+				list_add(&page->lru, &l_inactive);
+			}
+		} else {
+			list_add(&page->lru, &l_inactive);
+		}
 	}
 
 	pagevec_init(&pvec, 1);
@@ -884,9 +912,11 @@ force_reclaim_mapped:
 		}
 	}
 	zone->nr_active += pgmoved;
-
+	
 	__count_zone_vm_events(PGREFILL, zone, pgscanned);
 	__count_vm_events(PGDEACTIVATE, pgdeactivate);
+	zone->total_active_to_inactive_pages += pgdeactivate; /* Get pages from active to inactive pages */
+
 	spin_unlock_irq(&zone->lru_lock);
 
 	trace_mm_pagereclaim_shrinkactive(pgscanned);

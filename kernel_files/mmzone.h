@@ -137,6 +137,11 @@ struct per_cpu_pageset {
  */
 
 struct zone {
+
+	/* Custom fields */
+	unsigned long total_active_to_inactive_pages;   /* cumulative number of pages moved from the active list to the inactive list */
+  unsigned long total_taken_from_inactive_pages;  /* cumulative number of pages evicted from the inactive list */
+
 	/* Fields commonly accessed by the page allocator */
 	unsigned long		free_pages;
 	unsigned long		pages_min, pages_low, pages_high;
