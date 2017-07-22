@@ -18,23 +18,41 @@
 
 // Function declarations
 void print_stats(struct memstats *mem_stats);
+void run_system_call(struct memstats *mem_stats);
 
 int main() {
   struct memstats *mem_stats;
-  int status;
+  int i, *test;
 
   mem_stats = malloc(sizeof(*mem_stats));
+  run_system_call(mem_stats);
+  printf("\nMemory statistics without allocating a lot of memory...\n");
+  print_stats(mem_stats);
+
+  // Allocate a lot of memory
+  for (i = 0; i < 5000000; i++) {
+    test = malloc(50 * sizeof(int));
+  }
+
+  run_system_call(mem_stats);
+  printf("\nMemory statistics with allocating a lot of memory...\n");
+  print_stats(mem_stats);
+
+  free(test);
+
+  return 0;
+}
+
+void run_system_call(struct memstats *mem_stats) {
+  int status;
+
   /* Call new system call */
   status = syscall(302, mem_stats);
 
   if (status < 0) {
     printf("Something went wrong. Status: %d\n", status);
-    return 0;
+    exit(-1);
   }
-
-  print_stats(mem_stats);
-
-  return 0;
 }
 
 void print_stats(struct memstats *mem_stats) {
