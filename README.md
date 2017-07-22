@@ -1,5 +1,7 @@
 # Memory Management in Linux Kernel
 
+The tester files for part 1 and 2 can be found in the `/test` directory.
+
 ## Part 1
 
 #### Compile & Run
